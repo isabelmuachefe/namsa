@@ -215,7 +215,7 @@ const ArtistUpload: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {lookups.workTypes.map((type: any) => (
-                      <SelectItem key={type.id} value={type.id.toString()}>{type.typeName}</SelectItem>
+                      <SelectItem key={type.id} value={type.id.toString()}>{type.workTypeName}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -373,17 +373,6 @@ const ArtistUpload: React.FC = () => {
                 <p className="text-sm text-gray-500 mt-1">
                   Supported formats: MP3, WAV, M4A, MP4, AVI, MOV
                 </p>
-              </div>
-              <div>
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea 
-                  id="notes" 
-                  name="notes" 
-                  value={form.notes || ''} 
-                  onChange={handleChange}
-                  placeholder="Any additional notes about this track..."
-                  rows={3}
-                />
               </div>
             </div>
           </div>

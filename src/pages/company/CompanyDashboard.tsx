@@ -201,7 +201,7 @@ const CompanyDashboard: React.FC = () => {
 
         {/* Quick Actions */}
         <div className="flex gap-3">
-          <Button onClick={() => navigate('/company/logsheets/create')} className="gap-2 bg-gradient-namsa hover:opacity-90">
+          <Button onClick={() => navigate('/company/logsheet/create')} className="gap-2 bg-gradient-namsa hover:opacity-90">
             <Plus className="h-4 w-4" />
             Create Log Sheet
           </Button>

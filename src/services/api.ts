@@ -546,15 +546,15 @@ export const lookupAPI = {
     return response.data;
   },
   getBankNames: async (): Promise<any[]> => {
-    const response = await api.get('/api/banknames/all');
+    const response = await api.get('/api/bankname/all');
     return response.data;
   },
   getMaritalStatuses: async (): Promise<any[]> => {
-    const response = await api.get('/api/maritalstatus/all');
+    const response = await api.get('/api/martial/all');
     return response.data;
   },
   getMemberCategories: async (): Promise<any[]> => {
-    const response = await api.get('/api/membercategories/all');
+    const response = await api.get('/api/members/all');
     return response.data;
   },
   getGenders: async (): Promise<any[]> => {
@@ -573,12 +573,12 @@ export const lookupAPI = {
   },
 
   getArtistUploadTypes: async (): Promise<ArtistUploadType[]> => {
-    const response = await api.get('/api/artistuploadtypes/all');
+    const response = await api.get('/api/uploadtype/all');
     return response.data;
   },
 
   getArtistWorkTypes: async (): Promise<ArtistWorkType[]> => {
-    const response = await api.get('/api/artistworktypes/all');
+    const response = await api.get('/api/worktype/all');
     return response.data;
   },
 

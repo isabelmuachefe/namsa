@@ -111,19 +111,19 @@ const ArtistPaymentForm: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="space-y-2">
                   <Label>Total Played</Label>
-                  <Input type="number" step="0.01" value={(form as any).totalplayed || 0} onChange={(e) => update('totalplayed' as any, Number(e.target.value))} />
+                  <Input type="number" step="0.01" value={(form as any).totalplayed || ''} onChange={(e) => update('totalplayed' as any, Number(e.target.value))} placeholder="Enter total played" />
                 </div>
                 <div className="space-y-2">
                   <Label>Unit Price</Label>
-                  <Input type="number" step="0.01" value={(form as any).UnitPrice || 0} onChange={(e) => update('UnitPrice' as any, Number(e.target.value))} />
+                  <Input type="number" step="0.01" value={(form as any).UnitPrice || ''} onChange={(e) => update('UnitPrice' as any, Number(e.target.value))} placeholder="Enter unit price" />
                 </div>
                 <div className="space-y-2">
                   <Label>Total Earned</Label>
-                  <Input type="number" step="0.01" value={(form as any).TotalEarned || 0} onChange={(e) => update('TotalEarned' as any, Number(e.target.value))} />
+                  <Input type="number" step="0.01" value={(form as any).TotalEarned || ''} onChange={(e) => update('TotalEarned' as any, Number(e.target.value))} placeholder="Enter total earned" />
                 </div>
                 <div className="space-y-2">
                   <Label>Total Net Paid</Label>
-                  <Input type="number" step="0.01" value={(form as any).TotalNetpaid || 0} onChange={(e) => update('TotalNetpaid' as any, Number(e.target.value))} />
+                  <Input type="number" step="0.01" value={(form as any).TotalNetpaid || ''} onChange={(e) => update('TotalNetpaid' as any, Number(e.target.value))} placeholder="Enter net paid" />
                 </div>
               </div>
             </div>
@@ -139,7 +139,7 @@ const ArtistPaymentForm: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>Account Number</Label>
-                  <Input type="number" value={(form as any).AccountNumber || 0} onChange={(e) => update('AccountNumber' as any, Number(e.target.value))} />
+                  <Input type="number" value={(form as any).AccountNumber || ''} onChange={(e) => update('AccountNumber' as any, Number(e.target.value))} placeholder="Enter account number" />
                 </div>
                 <div className="space-y-2">
                   <Label>Branch Name</Label>

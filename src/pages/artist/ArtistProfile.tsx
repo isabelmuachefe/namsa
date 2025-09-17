@@ -92,7 +92,6 @@ const ArtistProfile: React.FC = () => {
           maritalStatusId: data.maritalStatus?.id || undefined,
           memberCategoryId: data.memberCategory?.id || undefined,
           genderId: data.gender?.id || undefined,
-          notes: data.notes || '',
         });
       } catch (error) {
         // Profile doesn't exist yet, show create form
@@ -570,20 +569,28 @@ const ArtistProfile: React.FC = () => {
             </div>
 
             {/* Notes */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Additional Notes</h3>
+            {/* Admin-only fields display (read-only) */}
+            {profile && profile.status?.statusName === 'APPROVED' && (
               <div>
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea 
-                  id="notes" 
-                  name="notes" 
-                  value={form.notes} 
-                  onChange={(e) => setForm(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Any additional information..."
-                  rows={3}
-                />
+                <h3 className="text-lg font-semibold mb-4">Membership Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Artist ID</Label>
+                    <Input value={profile.ArtistId || 'Not assigned'} disabled />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>IPI Number</Label>
+                    <Input value={profile.IPI_number || 'Not assigned'} disabled />
+                  </div>
+                </div>
+                {profile.notes && (
+                  <div className="space-y-2 mt-4">
+                    <Label>Admin Notes</Label>
+                    <Textarea value={profile.notes} disabled rows={3} />
+                  </div>
+                )}
               </div>
-            </div>
+            )}
 
             <div className="flex justify-end">
               <Button onClick={handleSave} disabled={saving}>

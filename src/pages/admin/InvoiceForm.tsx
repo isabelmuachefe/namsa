@@ -49,11 +49,6 @@ const InvoiceForm: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Invoice Number</Label>
-                <Input value={form.invoiceNumber || ''} onChange={(e) => update('invoiceNumber', e.target.value)} required />
-              </div>
-
-              <div className="space-y-2">
                 <Label>Invoice Date</Label>
                 <Input value={form.invoiceDate || ''} onChange={(e) => update('invoiceDate', e.target.value)} placeholder="YYYY-MM-DD" required />
               </div>
@@ -119,19 +114,19 @@ const InvoiceForm: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
                   <Label>Total Used</Label>
-                  <Input type="number" value={form.totalUsed || 0} onChange={(e) => update('totalUsed', Number(e.target.value))} />
+                  <Input type="number" value={form.totalUsed || ''} onChange={(e) => update('totalUsed', Number(e.target.value))} placeholder="Enter quantity" />
                 </div>
                 <div className="space-y-2">
                   <Label>Unit Price</Label>
-                  <Input type="number" step="0.01" value={form.unitPrice || 0} onChange={(e) => update('unitPrice', Number(e.target.value))} />
+                  <Input type="number" step="0.01" value={form.unitPrice || ''} onChange={(e) => update('unitPrice', Number(e.target.value))} placeholder="Enter unit price" />
                 </div>
                 <div className="space-y-2">
                   <Label>Total Amount</Label>
-                  <Input type="number" step="0.01" value={form.totalAmount || 0} onChange={(e) => update('totalAmount', Number(e.target.value))} />
+                  <Input type="number" step="0.01" value={form.totalAmount || ''} onChange={(e) => update('totalAmount', Number(e.target.value))} placeholder="Enter total amount" />
                 </div>
                 <div className="space-y-2">
                   <Label>Total Net Amount</Label>
-                  <Input type="number" step="0.01" value={form.totalNetAmount || 0} onChange={(e) => update('totalNetAmount', Number(e.target.value))} />
+                  <Input type="number" step="0.01" value={form.totalNetAmount || ''} onChange={(e) => update('totalNetAmount', Number(e.target.value))} placeholder="Enter net amount" />
                 </div>
               </div>
             </div>
@@ -143,7 +138,7 @@ const InvoiceForm: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
                   <Label>Account Number</Label>
-                  <Input type="number" value={form.accountNumber || 0} onChange={(e) => update('accountNumber', Number(e.target.value))} />
+                  <Input type="number" value={form.accountNumber || ''} onChange={(e) => update('accountNumber', Number(e.target.value))} placeholder="Enter account number" />
                 </div>
                 <div className="space-y-2">
                   <Label>Bank Name</Label>

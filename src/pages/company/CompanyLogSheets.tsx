@@ -79,7 +79,7 @@ const CompanyLogSheets: React.FC = () => {
               Manage your music log sheets and track usage
             </p>
           </div>
-          <Button onClick={() => navigate('/company/logsheets/create')} className="gap-2">
+          <Button onClick={() => navigate('/company/logsheet/create')} className="gap-2">
             <Plus className="h-4 w-4" />
             Create Log Sheet
           </Button>

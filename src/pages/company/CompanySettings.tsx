@@ -5,15 +5,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { companyAPI } from '@/services/api';
+import { companyAPI, authAPI } from '@/services/api';
 import { Company } from '@/types';
-import { Building2, Save, User, Lock, Mail, Phone, MapPin } from 'lucide-react';
+import { Building2, Save, User, Lock, Mail, Phone, MapPin, Eye, EyeOff } from 'lucide-react';
 
 const CompanySettings: React.FC = () => {
   const [profile, setProfile] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false
+  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -59,6 +71,51 @@ const CompanySettings: React.FC = () => {
     }
   };
 
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast({
+        title: "Error",
+        description: "New passwords do not match",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setChangingPassword(true);
+      await authAPI.changePassword(passwordData.currentPassword, passwordData.newPassword);
+      
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      
+      toast({
+        title: "Success",
+        description: "Password changed successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.response?.data?.message || "Failed to change password",
+        variant: "destructive",
+      });
+    } finally {
+      setChangingPassword(false);
+    }
+  };
   if (loading) {
     return (
       <DashboardLayout title="Company Settings">
@@ -141,13 +198,25 @@ const CompanySettings: React.FC = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="companyAddress">Company Address</Label>
-                  <Textarea
-                    id="companyAddress"
-                    value={profile?.companyAddress || ''}
-                    onChange={(e) => setProfile(prev => prev ? {...prev, companyAddress: e.target.value} : null)}
-                    placeholder="Enter company address"
-                    rows={3}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="currentPassword"
+                      type={showPasswords.current ? 'text' : 'password'}
+                      value={passwordData.currentPassword}
+                      onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                      required
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                      onClick={() => setShowPasswords(prev => ({ ...prev, current: !prev.current }))}
+                    >
+                      {showPasswords.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="flex justify-end">
@@ -185,23 +254,49 @@ const CompanySettings: React.FC = () => {
                 <Button variant="outline" size="sm" className="w-full gap-2">
                   <MapPin className="h-4 w-4" />
                   Update Address
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Account Information</CardTitle>
+                  <div className="relative">
+                    <Input
+                      id="newPassword"
+                      type={showPasswords.new ? 'text' : 'password'}
+                      value={passwordData.newPassword}
+                      onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                      required
+                      minLength={6}
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                      onClick={() => setShowPasswords(prev => ({ ...prev, new: !prev.new }))}
+                    >
+                      {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Account ID:</span>
-                  <span className="font-mono">{profile?.id}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Created:</span>
-                  <span>{profile?.user?.createdAt ? new Date(profile.user.createdAt).toLocaleDateString() : 'N/A'}</span>
-                </div>
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      type={showPasswords.confirm ? 'text' : 'password'}
+                      value={passwordData.confirmPassword}
+                      onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      required
+                      minLength={6}
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                      onClick={() => setShowPasswords(prev => ({ ...prev, confirm: !prev.confirm }))}
+                    >
+                      {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Status:</span>
                   <span className="text-namsa-success">Active</span>

@@ -4,19 +4,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { artistAPI } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
+import { Upload, Eye, Edit, FileText, Image, CheckCircle } from 'lucide-react';
 
 const ArtistDocuments: React.FC = () => {
-  const [uploads, setUploads] = useState<Record<string, File | null>>({});
-  const [titles, setTitles] = useState<Record<string, string>>({
-    passportPhoto: 'Passport Photo',
-    idDocument: 'ID Document',
-    bankConfirmationLetter: 'Bank Confirmation Letter',
-    proofOfPayment: 'Proof of Payment',
+  const [currentUploads, setCurrentUploads] = useState<Record<string, { file: File | null; title: string }>>({
+    passportPhoto: { file: null, title: 'Passport Photo' },
+    idDocument: { file: null, title: 'ID Document' },
+    bankConfirmationLetter: { file: null, title: 'Bank Confirmation Letter' },
+    proofOfPayment: { file: null, title: 'Proof of Payment' },
   });
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState<Record<string, boolean>>({});
   const [documents, setDocuments] = useState<any>({});
   const { toast } = useToast();
 
@@ -35,47 +37,44 @@ const ArtistDocuments: React.FC = () => {
     load();
   }, []);
 
-  const handleUpload = async () => {
+  const handleIndividualUpload = async (documentType: string) => {
+    const uploadData = currentUploads[documentType];
+    if (!uploadData.file) {
+      toast({
+        title: "No File Selected",
+        description: "Please select a file to upload",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      setSaving(true);
-      const uploadPromises = [];
+      setUploading(prev => ({ ...prev, [documentType]: true }));
       
-      if (uploads.passportPhoto) {
-        uploadPromises.push(
-          artistAPI.uploadPassportPhoto(uploads.passportPhoto, titles.passportPhoto)
-        );
-      }
-      if (uploads.idDocument) {
-        uploadPromises.push(
-          artistAPI.uploadIdDocument(uploads.idDocument, titles.idDocument)
-        );
-      }
-      if (uploads.bankConfirmationLetter) {
-        uploadPromises.push(
-          artistAPI.uploadBankConfirmationLetter(uploads.bankConfirmationLetter, titles.bankConfirmationLetter)
-        );
-      }
-      if (uploads.proofOfPayment) {
-        uploadPromises.push(
-          artistAPI.uploadProofOfPayment(uploads.proofOfPayment, titles.proofOfPayment)
-        );
+      switch (documentType) {
+        case 'passportPhoto':
+          await artistAPI.uploadPassportPhoto(uploadData.file, uploadData.title);
+          break;
+        case 'idDocument':
+          await artistAPI.uploadIdDocument(uploadData.file, uploadData.title);
+          break;
+        case 'bankConfirmationLetter':
+          await artistAPI.uploadBankConfirmationLetter(uploadData.file, uploadData.title);
+          break;
+        case 'proofOfPayment':
+          await artistAPI.uploadProofOfPayment(uploadData.file, uploadData.title);
+          break;
       }
 
-      if (uploadPromises.length === 0) {
-        toast({
-          title: "No Files Selected",
-          description: "Please select at least one file to upload",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      await Promise.all(uploadPromises);
+      // Clear the upload
+      setCurrentUploads(prev => ({
+        ...prev,
+        [documentType]: { file: null, title: uploadData.title }
+      }));
       
-      setUploads({});
       toast({
         title: "Upload Successful",
-        description: "Documents uploaded successfully!",
+        description: `${uploadData.title} uploaded successfully!`,
       });
       
       // Reload documents
@@ -84,15 +83,23 @@ const ArtistDocuments: React.FC = () => {
     } catch (error: any) {
       toast({
         title: "Upload Failed",
-        description: error?.response?.data?.message || "Failed to upload documents",
+        description: error?.response?.data?.message || `Failed to upload ${uploadData.title}`,
         variant: "destructive",
       });
     } finally {
-      setSaving(false);
+      setUploading(prev => ({ ...prev, [documentType]: false }));
     }
   };
 
-  const clearFile = (key: string) => setUploads((u) => ({ ...u, [key]: null }));
+  const updateUpload = (documentType: string, field: 'file' | 'title', value: any) => {
+    setCurrentUploads(prev => ({
+      ...prev,
+      [documentType]: {
+        ...prev[documentType],
+        [field]: value
+      }
+    }));
+  };
 
   if (loading) {
     return (
@@ -105,55 +112,93 @@ const ArtistDocuments: React.FC = () => {
   return (
     <DashboardLayout title="Documents">
       <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Document Management</h1>
+          <p className="text-muted-foreground">
+            Upload and manage your required documents individually
+          </p>
+        </div>
+
         {/* Current Documents */}
         {(documents.passportPhoto || documents.idDocument || documents.bankConfirmationLetter || documents.proofOfPayment) && (
           <Card>
             <CardHeader>
-              <CardTitle>Current Documents</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-namsa-success" />
+                Uploaded Documents
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {documents.passportPhoto && (
-                <div className="flex justify-between items-center p-3 border rounded">
+                <div className="flex justify-between items-center p-4 border rounded-lg bg-muted/30">
                   <div>
-                    <p className="font-medium">Passport Photo</p>
+                    <p className="font-medium flex items-center gap-2">
+                      <Image className="h-4 w-4" />
+                      Passport Photo
+                    </p>
                     <p className="text-sm text-gray-500">{documents.passportPhoto.imageTitle}</p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => window.open(documents.passportPhoto.imageUrl, '_blank')}>
-                    View
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => window.open(documents.passportPhoto.imageUrl, '_blank')}>
+                      <Eye className="h-4 w-4 mr-1" />
+                      View
+                    </Button>
+                    <Badge variant="default" className="bg-namsa-success">Uploaded</Badge>
+                  </div>
                 </div>
               )}
               {documents.idDocument && (
-                <div className="flex justify-between items-center p-3 border rounded">
+                <div className="flex justify-between items-center p-4 border rounded-lg bg-muted/30">
                   <div>
-                    <p className="font-medium">ID Document</p>
+                    <p className="font-medium flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      ID Document
+                    </p>
                     <p className="text-sm text-gray-500">{documents.idDocument.documentTitle}</p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => window.open(documents.idDocument.fileUrl, '_blank')}>
-                    View
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => window.open(documents.idDocument.fileUrl, '_blank')}>
+                      <Eye className="h-4 w-4 mr-1" />
+                      View
+                    </Button>
+                    <Badge variant="default" className="bg-namsa-success">Uploaded</Badge>
+                  </div>
                 </div>
               )}
               {documents.bankConfirmationLetter && (
-                <div className="flex justify-between items-center p-3 border rounded">
+                <div className="flex justify-between items-center p-4 border rounded-lg bg-muted/30">
                   <div>
-                    <p className="font-medium">Bank Confirmation Letter</p>
+                    <p className="font-medium flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Bank Confirmation Letter
+                    </p>
                     <p className="text-sm text-gray-500">{documents.bankConfirmationLetter.documentTitle}</p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => window.open(documents.bankConfirmationLetter.fileUrl, '_blank')}>
-                    View
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => window.open(documents.bankConfirmationLetter.fileUrl, '_blank')}>
+                      <Eye className="h-4 w-4 mr-1" />
+                      View
+                    </Button>
+                    <Badge variant="default" className="bg-namsa-success">Uploaded</Badge>
+                  </div>
                 </div>
               )}
               {documents.proofOfPayment && (
-                <div className="flex justify-between items-center p-3 border rounded">
+                <div className="flex justify-between items-center p-4 border rounded-lg bg-muted/30">
                   <div>
-                    <p className="font-medium">Proof of Payment</p>
+                    <p className="font-medium flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Proof of Payment
+                    </p>
                     <p className="text-sm text-gray-500">{documents.proofOfPayment.documentTitle}</p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => window.open(documents.proofOfPayment.fileUrl, '_blank')}>
-                    View
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => window.open(documents.proofOfPayment.fileUrl, '_blank')}>
+                      <Eye className="h-4 w-4 mr-1" />
+                      View
+                    </Button>
+                    <Badge variant="default" className="bg-namsa-success">Uploaded</Badge>
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -163,102 +208,211 @@ const ArtistDocuments: React.FC = () => {
         {/* Upload New Documents */}
         <Card>
           <CardHeader>
-            <CardTitle>Upload Required Documents</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5" />
+              Upload Required Documents
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="passportPhoto">Passport Photo (Image)</Label>
-                <Input
-                  type="text"
-                  placeholder="Document Title"
-                  value={titles.passportPhoto}
-                  onChange={(e) => setTitles((t) => ({ ...t, passportPhoto: e.target.value }))}
-                />
-                <Input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={(e) => setUploads((u) => ({ ...u, passportPhoto: e.target.files?.[0] || null }))} 
-                />
-                {uploads.passportPhoto && (
-                  <div className="text-sm mt-1 flex justify-between items-center p-2 bg-gray-50 rounded">
-                    <span>{uploads.passportPhoto.name}</span>
-                    <Button variant="ghost" size="sm" onClick={() => clearFile('passportPhoto')}>Remove</Button>
+            {/* Passport Photo */}
+            <Card className="border-dashed">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Image className="h-5 w-5" />
+                  Passport Photo
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Document Title</Label>
+                  <Input
+                    value={currentUploads.passportPhoto.title}
+                    onChange={(e) => updateUpload('passportPhoto', 'title', e.target.value)}
+                    placeholder="Enter document title"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Select Image File</Label>
+                  <Input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={(e) => updateUpload('passportPhoto', 'file', e.target.files?.[0] || null)} 
+                  />
+                </div>
+                {currentUploads.passportPhoto.file && (
+                  <div className="text-sm p-3 bg-muted rounded-lg">
+                    <p className="font-medium">{currentUploads.passportPhoto.file.name}</p>
+                    <p className="text-muted-foreground">Size: {(currentUploads.passportPhoto.file.size / 1024 / 1024).toFixed(2)} MB</p>
                   </div>
                 )}
-              </div>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => handleIndividualUpload('passportPhoto')}
+                    disabled={!currentUploads.passportPhoto.file || uploading.passportPhoto}
+                    className="flex-1"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {uploading.passportPhoto ? 'Uploading...' : 'Upload Photo'}
+                  </Button>
+                  {documents.passportPhoto && (
+                    <Button variant="outline" onClick={() => window.open(documents.passportPhoto.imageUrl, '_blank')}>
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Current
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
-              <div className="space-y-2">
-                <Label htmlFor="idDocument">ID Document (PDF)</Label>
-                <Input
-                  type="text"
-                  placeholder="Document Title"
-                  value={titles.idDocument}
-                  onChange={(e) => setTitles((t) => ({ ...t, idDocument: e.target.value }))}
-                />
-                <Input 
-                  type="file" 
-                  accept="application/pdf" 
-                  onChange={(e) => setUploads((u) => ({ ...u, idDocument: e.target.files?.[0] || null }))} 
-                />
-                {uploads.idDocument && (
-                  <div className="text-sm mt-1 flex justify-between items-center p-2 bg-gray-50 rounded">
-                    <span>{uploads.idDocument.name}</span>
-                    <Button variant="ghost" size="sm" onClick={() => clearFile('idDocument')}>Remove</Button>
+            {/* ID Document */}
+            <Card className="border-dashed">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  ID Document
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Document Title</Label>
+                  <Input
+                    value={currentUploads.idDocument.title}
+                    onChange={(e) => updateUpload('idDocument', 'title', e.target.value)}
+                    placeholder="Enter document title"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Select PDF File</Label>
+                  <Input 
+                    type="file" 
+                    accept="application/pdf" 
+                    onChange={(e) => updateUpload('idDocument', 'file', e.target.files?.[0] || null)} 
+                  />
+                </div>
+                {currentUploads.idDocument.file && (
+                  <div className="text-sm p-3 bg-muted rounded-lg">
+                    <p className="font-medium">{currentUploads.idDocument.file.name}</p>
+                    <p className="text-muted-foreground">Size: {(currentUploads.idDocument.file.size / 1024 / 1024).toFixed(2)} MB</p>
                   </div>
                 )}
-              </div>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => handleIndividualUpload('idDocument')}
+                    disabled={!currentUploads.idDocument.file || uploading.idDocument}
+                    className="flex-1"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {uploading.idDocument ? 'Uploading...' : 'Upload Document'}
+                  </Button>
+                  {documents.idDocument && (
+                    <Button variant="outline" onClick={() => window.open(documents.idDocument.fileUrl, '_blank')}>
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Current
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
-              <div className="space-y-2">
-                <Label htmlFor="bankConfirmationLetter">Bank Confirmation Letter (PDF)</Label>
-                <Input
-                  type="text"
-                  placeholder="Document Title"
-                  value={titles.bankConfirmationLetter}
-                  onChange={(e) => setTitles((t) => ({ ...t, bankConfirmationLetter: e.target.value }))}
-                />
-                <Input 
-                  type="file" 
-                  accept="application/pdf" 
-                  onChange={(e) => setUploads((u) => ({ ...u, bankConfirmationLetter: e.target.files?.[0] || null }))} 
-                />
-                {uploads.bankConfirmationLetter && (
-                  <div className="text-sm mt-1 flex justify-between items-center p-2 bg-gray-50 rounded">
-                    <span>{uploads.bankConfirmationLetter.name}</span>
-                    <Button variant="ghost" size="sm" onClick={() => clearFile('bankConfirmationLetter')}>Remove</Button>
+            {/* Bank Confirmation Letter */}
+            <Card className="border-dashed">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Bank Confirmation Letter
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Document Title</Label>
+                  <Input
+                    value={currentUploads.bankConfirmationLetter.title}
+                    onChange={(e) => updateUpload('bankConfirmationLetter', 'title', e.target.value)}
+                    placeholder="Enter document title"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Select PDF File</Label>
+                  <Input 
+                    type="file" 
+                    accept="application/pdf" 
+                    onChange={(e) => updateUpload('bankConfirmationLetter', 'file', e.target.files?.[0] || null)} 
+                  />
+                </div>
+                {currentUploads.bankConfirmationLetter.file && (
+                  <div className="text-sm p-3 bg-muted rounded-lg">
+                    <p className="font-medium">{currentUploads.bankConfirmationLetter.file.name}</p>
+                    <p className="text-muted-foreground">Size: {(currentUploads.bankConfirmationLetter.file.size / 1024 / 1024).toFixed(2)} MB</p>
                   </div>
                 )}
-              </div>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => handleIndividualUpload('bankConfirmationLetter')}
+                    disabled={!currentUploads.bankConfirmationLetter.file || uploading.bankConfirmationLetter}
+                    className="flex-1"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {uploading.bankConfirmationLetter ? 'Uploading...' : 'Upload Letter'}
+                  </Button>
+                  {documents.bankConfirmationLetter && (
+                    <Button variant="outline" onClick={() => window.open(documents.bankConfirmationLetter.fileUrl, '_blank')}>
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Current
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
-              <div className="space-y-2">
-                <Label htmlFor="proofOfPayment">Proof of Payment (PDF)</Label>
-                <Input
-                  type="text"
-                  placeholder="Document Title"
-                  value={titles.proofOfPayment}
-                  onChange={(e) => setTitles((t) => ({ ...t, proofOfPayment: e.target.value }))}
-                />
-                <Input 
-                  type="file" 
-                  accept="application/pdf" 
-                  onChange={(e) => setUploads((u) => ({ ...u, proofOfPayment: e.target.files?.[0] || null }))} 
-                />
-                {uploads.proofOfPayment && (
-                  <div className="text-sm mt-1 flex justify-between items-center p-2 bg-gray-50 rounded">
-                    <span>{uploads.proofOfPayment.name}</span>
-                    <Button variant="ghost" size="sm" onClick={() => clearFile('proofOfPayment')}>Remove</Button>
+            {/* Proof of Payment */}
+            <Card className="border-dashed">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Proof of Payment
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Document Title</Label>
+                  <Input
+                    value={currentUploads.proofOfPayment.title}
+                    onChange={(e) => updateUpload('proofOfPayment', 'title', e.target.value)}
+                    placeholder="Enter document title"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Select PDF File</Label>
+                  <Input 
+                    type="file" 
+                    accept="application/pdf" 
+                    onChange={(e) => updateUpload('proofOfPayment', 'file', e.target.files?.[0] || null)} 
+                  />
+                </div>
+                {currentUploads.proofOfPayment.file && (
+                  <div className="text-sm p-3 bg-muted rounded-lg">
+                    <p className="font-medium">{currentUploads.proofOfPayment.file.name}</p>
+                    <p className="text-muted-foreground">Size: {(currentUploads.proofOfPayment.file.size / 1024 / 1024).toFixed(2)} MB</p>
                   </div>
                 )}
-              </div>
-            </div>
-
-            <Button 
-              onClick={handleUpload} 
-              disabled={saving || Object.values(uploads).every(file => !file)}
-              className="w-full"
-            >
-              {saving ? 'Uploading...' : 'Upload Documents'}
-            </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => handleIndividualUpload('proofOfPayment')}
+                    disabled={!currentUploads.proofOfPayment.file || uploading.proofOfPayment}
+                    className="flex-1"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {uploading.proofOfPayment ? 'Uploading...' : 'Upload Proof'}
+                  </Button>
+                  {documents.proofOfPayment && (
+                    <Button variant="outline" onClick={() => window.open(documents.proofOfPayment.fileUrl, '_blank')}>
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Current
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </CardContent>
         </Card>
       </div>

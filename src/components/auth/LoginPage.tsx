@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Music, Building2, Shield, Moon, Sun, Eye, EyeOff } from 'lucide-react';
 import namsaLogo from '@/assets/namsa-logo.png';
+import ForgotPasswordDialog from './ForgotPasswordDialog';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -18,6 +19,7 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [registerMode, setRegisterMode] = useState(false);
   const [userType, setUserType] = useState<'artist' | 'company'>('artist');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   
   const { login, register, registerArtist, registerCompany } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -275,7 +277,9 @@ const LoginPage: React.FC = () => {
                     </Button>
                     <br />
                     <Button variant="link" className="text-sm text-muted-foreground">
-                      Forgot your password?
+                      <span onClick={() => setShowForgotPassword(true)} className="cursor-pointer hover:text-primary">
+                        Forgot your password?
+                      </span>
                     </Button>
                   </div>
                 </CardContent>
@@ -355,7 +359,9 @@ const LoginPage: React.FC = () => {
                     </Button>
                     <br />
                     <Button variant="link" className="text-sm text-muted-foreground">
-                      Forgot your password?
+                      <span onClick={() => setShowForgotPassword(true)} className="cursor-pointer hover:text-primary">
+                        Forgot your password?
+                      </span>
                     </Button>
                   </div>
                 </CardContent>
@@ -370,6 +376,11 @@ const LoginPage: React.FC = () => {
           <p className="mt-1">Empowering Namibian music creators and industry professionals</p>
         </div>
       </div>
+      
+      <ForgotPasswordDialog 
+        open={showForgotPassword} 
+        onOpenChange={setShowForgotPassword} 
+      />
     </div>
   );
 };

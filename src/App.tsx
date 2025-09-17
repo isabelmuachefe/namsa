@@ -24,6 +24,7 @@ import CreateLogSheet from "./pages/company/CreateLogSheet";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminRoutes from "./pages/admin/AdminRoutes";
 import NotFound from "./pages/NotFound";
+import ResetPasswordPage from "./components/auth/ResetPasswordPage";
 import { useAuth } from "./contexts/AuthContext";
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement; roles?: Array<'ARTIST'|'COMPANY'|'ADMIN'> }>=({ children, roles })=>{
@@ -64,6 +65,7 @@ const App = () => (
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<LoginPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/license-application" element={<LicenseApplicationPage />} />
               
               {/* Admin Routes */}

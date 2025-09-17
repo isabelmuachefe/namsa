@@ -3,15 +3,19 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import AdminDashboard from './AdminDashboard';
 import AdminPendingProfiles from './AdminPendingProfiles';
 import AdminPendingMusic from './AdminPendingMusic';
+import AdminLicenseApplications from './AdminLicenseApplications';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { adminAPI, invoiceAPI } from '@/services/api';
 import DataTable, { Column } from '@/components/common/DataTable';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import type { Company, Admin as AdminType, ArtistWork, LogSheet, MemberDetails, Invoice, ArtistInvoiceReports, User } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Plus } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import InvoiceForm from './InvoiceForm';
 import ArtistPaymentForm from './ArtistPaymentForm';
 
@@ -479,12 +483,75 @@ const AllUsers: React.FC = () => {
 const Companies: React.FC = () => {
   const [rows, setRows] = React.useState<Company[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [editForm, setEditForm] = useState<Partial<Company>>({});
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    email: '',
+    password: '',
+    companyName: '',
+    companyEmail: '',
+    companyPhone: '',
+    companyAddress: '',
+    contactPerson: '',
+  });
+  const [saving, setSaving] = useState(false);
   const { toast } = useToast();
   const reload = React.useCallback(() => {
     setLoading(true);
     adminAPI.getAllCompanies().then(setRows).catch(() => setRows([])).finally(() => setLoading(false));
   }, []);
   React.useEffect(() => { reload(); }, [reload]);
+
+  const handleEdit = (company: Company) => {
+    setEditingCompany(company);
+    setEditForm({
+      companyName: company.companyName,
+      companyEmail: company.companyEmail,
+      companyPhone: company.companyPhone,
+      companyAddress: company.companyAddress,
+      contactPerson: company.contactPerson,
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingCompany) return;
+    try {
+      setSaving(true);
+      await adminAPI.updateCompany(editingCompany.id, editForm);
+      toast({ title: 'Company updated' });
+      setEditingCompany(null);
+      reload();
+    } catch {
+      toast({ title: 'Update failed', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCreate = async () => {
+    try {
+      setSaving(true);
+      await adminAPI.createCompany(createForm);
+      toast({ title: 'Company created' });
+      setShowCreateDialog(false);
+      setCreateForm({
+        email: '',
+        password: '',
+        companyName: '',
+        companyEmail: '',
+        companyPhone: '',
+        companyAddress: '',
+        contactPerson: '',
+      });
+      reload();
+    } catch {
+      toast({ title: 'Create failed', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const cols: Column<Company>[] = [
     { key: 'id', header: 'ID', accessor: 'id' },
     { key: 'companyName', header: 'Name', accessor: 'companyName' },
@@ -492,29 +559,76 @@ const Companies: React.FC = () => {
     { key: 'companyPhone', header: 'Phone', accessor: 'companyPhone' },
     { key: 'contactPerson', header: 'Contact', accessor: 'contactPerson' },
   ];
-  const createCompany = async () => {
-    const email = window.prompt('Login email for company user:');
-    const password = window.prompt('Temporary password:');
-    const companyName = window.prompt('Company name:');
-    const companyEmail = window.prompt('Company email:');
-    const companyPhone = window.prompt('Company phone:') || '';
-    const companyAddress = window.prompt('Company address:') || '';
-    const contactPerson = window.prompt('Contact person:') || '';
-    if (!email || !password || !companyName || !companyEmail) return;
-    try {
-      await adminAPI.createCompany({ email, password, companyName, companyAddress, companyPhone, contactPerson, companyEmail });
-      toast({ title: 'Company created' });
-      reload();
-    } catch {
-      toast({ title: 'Create failed', variant: 'destructive' });
-    }
-  };
+
   return (
     <Section title="All Companies">
       <div className="mb-4">
-        <Button onClick={createCompany} className="hover-scale">
-          <Plus className="w-4 h-4 mr-2" /> New Music Users
-        </Button>
+        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+          <DialogTrigger asChild>
+            <Button className="hover-scale">
+              <Plus className="w-4 h-4 mr-2" /> New Music User
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Create New Music User</DialogTitle>
+              <DialogDescription>Enter the company details below</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Login Email</Label>
+                <Input
+                  type="email"
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="user@company.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Temporary Password</Label>
+                <Input
+                  type="password"
+                  value={createForm.password}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, password: e.target.value }))}
+                  placeholder="Enter temporary password"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Company Name</Label>
+                <Input
+                  value={createForm.companyName}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, companyName: e.target.value }))}
+                  placeholder="Enter company name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Company Email</Label>
+                <Input
+                  type="email"
+                  value={createForm.companyEmail}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, companyEmail: e.target.value }))}
+                  placeholder="info@company.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Contact Person</Label>
+                <Input
+                  value={createForm.contactPerson}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, contactPerson: e.target.value }))}
+                  placeholder="Enter contact person name"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setShowCreateDialog(false)} className="flex-1">
+                  Cancel
+                </Button>
+                <Button onClick={handleCreate} disabled={saving} className="flex-1">
+                  {saving ? 'Creating...' : 'Create Company'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
       <DataTable
         data={rows}
@@ -524,23 +638,12 @@ const Companies: React.FC = () => {
         actions={[
           {
             label: 'Edit',
-            onClick: async (c: Company) => {
-              const companyName = window.prompt('Company name:', c.companyName) || c.companyName;
-              const companyEmail = window.prompt('Company email:', c.companyEmail) || c.companyEmail;
-              const companyPhone = window.prompt('Company phone:', c.companyPhone) || c.companyPhone;
-              const companyAddress = window.prompt('Company address:', c.companyAddress) || c.companyAddress;
-              const contactPerson = window.prompt('Contact person:', c.contactPerson) || c.contactPerson;
-              try {
-                await adminAPI.updateCompany(c.id, { companyName, companyEmail, companyPhone, companyAddress, contactPerson });
-                toast({ title: 'Company updated' });
-                reload();
-              } catch {
-                toast({ title: 'Update failed', variant: 'destructive' });
-              }
-            },
+            icon: Edit,
+            onClick: handleEdit,
           },
           {
             label: 'Delete',
+            icon: Trash2,
             variant: 'destructive',
             onClick: async (c: Company) => {
               if (!window.confirm('Delete this company?')) return;
@@ -555,6 +658,48 @@ const Companies: React.FC = () => {
           },
         ]}
       />
+
+      {/* Edit Company Dialog */}
+      <Dialog open={!!editingCompany} onOpenChange={() => setEditingCompany(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Company</DialogTitle>
+            <DialogDescription>Update company information</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Company Name</Label>
+              <Input
+                value={editForm.companyName || ''}
+                onChange={(e) => setEditForm(prev => ({ ...prev, companyName: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Company Email</Label>
+              <Input
+                type="email"
+                value={editForm.companyEmail || ''}
+                onChange={(e) => setEditForm(prev => ({ ...prev, companyEmail: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Contact Person</Label>
+              <Input
+                value={editForm.contactPerson || ''}
+                onChange={(e) => setEditForm(prev => ({ ...prev, contactPerson: e.target.value }))}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setEditingCompany(null)} className="flex-1">
+                Cancel
+              </Button>
+              <Button onClick={handleSaveEdit} disabled={saving} className="flex-1">
+                {saving ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Section>
   );
 };
@@ -620,6 +765,7 @@ const AdminRoutes: React.FC = () => {
       <Route path="stats" element={<AdminDashboard />} />
       <Route path="profiles/pending" element={<AdminPendingProfiles />} />
       <Route path="music/pending" element={<AdminPendingMusic />} />
+      <Route path="licenses" element={<AdminLicenseApplications />} />
       <Route path="artists" element={<ArtistsList />} />
       <Route path="users" element={<AllUsers />} />
       <Route path="companies" element={<Companies />} />
